@@ -393,6 +393,18 @@
   transition: opacity 0.2s ease;
 }
 
+/* Stock row - MUST have position:relative for action buttons */
+.wl-stock-row {
+  position: relative;
+  overflow: hidden;
+  border-bottom: 1px solid var(--border-light);
+  transition: background 0.2s ease;
+}
+
+.wl-stock-row:hover {
+  background: var(--bg-main);
+}
+
 .wl-row-actions {
   position: absolute;
   top: 0;
