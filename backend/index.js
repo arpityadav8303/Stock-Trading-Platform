@@ -12,10 +12,22 @@ const { STOCKS_LIST } = require("./stocksList");
 const { signJwt, verifyJwt, hashPassword, verifyPassword } = require("./utils/security");
 require("dotenv").config();
 const startPriceUpdater = require("./priceUpdater");
+const YahooFinance = require("yahoo-finance2").default;
 
 const app = express();
 const PORT = process.env.PORT || 3002;
 const JWT_SECRET = process.env.JWT_SECRET || "dev_jwt_secret_change_me";
+const yahooFinance = new YahooFinance();
+const MARKET_INDEX_REFRESH_MS = 3000;
+const MARKET_INDEX_SYMBOLS = [
+  { key: "nifty50", label: "NIFTY 50", symbol: "^NSEI" },
+  { key: "sensex", label: "SENSEX", symbol: "^BSESN" },
+];
+
+let marketIndicesCache = {
+  data: null,
+  fetchedAt: 0,
+};
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -230,6 +242,44 @@ app.get("/allWatchlist", requireAuth, async (req, res) => {
 app.get("/userFunds", requireAuth, async (req, res) => {
   const wallet = await getOrCreateWallet(req.user.userId);
   res.json({ balance: wallet.balance });
+});
+
+app.get("/marketIndices", requireAuth, async (req, res) => {
+  try {
+    const now = Date.now();
+    if (marketIndicesCache.data && now - marketIndicesCache.fetchedAt < MARKET_INDEX_REFRESH_MS) {
+      return res.json(marketIndicesCache.data);
+    }
+
+    const quotes = await Promise.all(
+      MARKET_INDEX_SYMBOLS.map(async ({ key, label, symbol }) => {
+        const quote = await yahooFinance.quote(symbol);
+        const price = Number(quote.regularMarketPrice) || 0;
+        const previousClose = Number(quote.regularMarketPreviousClose) || price;
+        const change = price - previousClose;
+        const changePercent = previousClose > 0 ? (change / previousClose) * 100 : 0;
+
+        return {
+          key,
+          label,
+          price,
+          change,
+          changePercent,
+          isUp: change >= 0,
+        };
+      })
+    );
+
+    marketIndicesCache = {
+      data: quotes,
+      fetchedAt: now,
+    };
+
+    return res.json(quotes);
+  } catch (error) {
+    console.error("Error fetching market indices:", error);
+    return res.status(500).json({ message: "Failed to fetch market indices" });
+  }
 });
 
 app.post("/addFunds", requireAuth, async (req, res) => {

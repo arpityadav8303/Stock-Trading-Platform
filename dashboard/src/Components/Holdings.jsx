@@ -2,6 +2,7 @@
 import api from "../api";
 import GeneralContext from "./GeneralContext";
 
+const REFRESH_INTERVAL_MS = 3000;
 const toNumber = (value) => Number(value) || 0;
 const formatMoney = (value) =>
   Number(value || 0).toLocaleString("en-IN", {
@@ -17,11 +18,20 @@ const Holdings = () => {
 
   useEffect(() => {
     const fetchHoldings = () => {
-      api.get("/allHoldings").then((res) => {
-        setAllHoldings(res.data || []);
-      });
+      api
+        .get("/allHoldings")
+        .then((res) => {
+          setAllHoldings(res.data || []);
+        })
+        .catch((err) => {
+          console.error("Error fetching holdings:", err);
+        });
     };
+
     fetchHoldings();
+    const intervalId = setInterval(fetchHoldings, REFRESH_INTERVAL_MS);
+
+    return () => clearInterval(intervalId);
   }, [generalContext.tradeRefreshTrigger]);
 
   useEffect(() => {

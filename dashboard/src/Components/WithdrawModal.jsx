@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import "./RazorpayModal.css"; // Reuse styling for consistency
 
 const WithdrawModal = ({ isOpen, onClose, onConfirm, currentBalance }) => {
@@ -41,10 +41,10 @@ const WithdrawModal = ({ isOpen, onClose, onConfirm, currentBalance }) => {
             <div className="merchant-info">
               <h3>Withdraw Funds</h3>
               <p>Transfer money back to your bank account</p>
-              <small style={{color: "#666"}}>Available: ₹{currentBalance.toLocaleString("en-IN")}</small>
+              <small style={{color: "#666"}}>Available: â‚¹{currentBalance.toLocaleString("en-IN")}</small>
             </div>
             <div className="amount-input" style={{ marginTop: "20px" }}>
-              <label>Withdraw Amount (₹)</label>
+              <label>Withdraw Amount (â‚¹)</label>
               <input
                 type="number"
                 placeholder="Enter Amount"
@@ -70,7 +70,7 @@ const WithdrawModal = ({ isOpen, onClose, onConfirm, currentBalance }) => {
           <div className="razorpay-body status">
             <div className="success-icon" style={{ background: "#2c3e50" }}>&#10004;</div>
             <h3>Withdrawal Initiated</h3>
-            <p>₹{amount} will be credited to your bank soon.</p>
+            <p>â‚¹{amount} will be credited to your bank soon.</p>
           </div>
         )}
       </div>

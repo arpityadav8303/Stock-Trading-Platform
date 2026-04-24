@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+﻿import React, { useEffect } from "react";
 import { useAuth } from "./AuthContext";
 
 const ProfilePage = () => {
@@ -25,7 +25,7 @@ const ProfilePage = () => {
         <div className="stat-group">
           <div>
             <p className="stat-label">Wallet Balance</p>
-            <h3 className="stat-value">₹{Number(stats?.walletBalance || 0).toLocaleString("en-IN")}</h3>
+            <h3 className="stat-value">â‚¹{Number(stats?.walletBalance || 0).toLocaleString("en-IN")}</h3>
           </div>
           <div>
             <p className="stat-label">Holdings</p>

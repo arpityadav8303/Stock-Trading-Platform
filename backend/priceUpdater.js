@@ -1,63 +1,126 @@
-const YahooFinance = require('yahoo-finance2').default;
+const YahooFinance = require("yahoo-finance2").default;
+
 const yahooFinance = new YahooFinance();
-const { HoldingsModel } = require('./model/HoldingsModel');
-const { PositionsModel } = require('./model/PositionsModel');
-const { WatchlistModel } = require('./model/WatchlistModel');
+const { HoldingsModel } = require("./model/HoldingsModel");
+const { PositionsModel } = require("./model/PositionsModel");
+const { WatchlistModel } = require("./model/WatchlistModel");
 
+const REFRESH_INTERVAL_MS = 3000;
+let isUpdating = false;
 
+const toNumber = (value) => Number(value) || 0;
+const formatSignedPercent = (value) => {
+  const numericValue = Number.isFinite(value) ? value : 0;
+  return `${numericValue >= 0 ? "+" : ""}${numericValue.toFixed(2)}%`;
+};
 
 async function updatePrices() {
+  if (isUpdating) {
+    console.log("[Yahoo Finance] Skipping update because the previous cycle is still running.");
+    return;
+  }
+
+  isUpdating = true;
+
   try {
-    // 1. Get all unique tickers from both collections
-    const holdings = await HoldingsModel.find({}, 'name');
-    const positions = await PositionsModel.find({}, 'name');
-    const watchlists = await WatchlistModel.find({}, 'name');
-    
+    const holdings = await HoldingsModel.find({}, "name");
+    const positions = await PositionsModel.find({}, "name");
+    const watchlists = await WatchlistModel.find({}, "name");
+
     const uniqueTickers = new Set([
-      ...holdings.map(h => h.name),
-      ...positions.map(p => p.name),
-      ...watchlists.map(w => w.name)
+      ...holdings.map((holding) => holding.name),
+      ...positions.map((position) => position.name),
+      ...watchlists.map((watchlist) => watchlist.name),
     ]);
 
-    if (uniqueTickers.size === 0) return;
+    if (uniqueTickers.size === 0) {
+      return;
+    }
 
-    // 2. Fetch prices from Yahoo Finance concurrently
     const fetchPromises = Array.from(uniqueTickers).map(async (ticker) => {
       try {
         let quote;
+
         try {
-          quote = await yahooFinance.quote(ticker + '.NS');
-        } catch (err) {
+          quote = await yahooFinance.quote(`${ticker}.NS`);
+        } catch (error) {
           quote = await yahooFinance.quote(ticker);
         }
+
         const currentPrice = quote.regularMarketPrice;
-        
+        const previousClose = toNumber(quote.regularMarketPreviousClose) || toNumber(currentPrice);
+        const dayChangePercent =
+          previousClose > 0 ? ((toNumber(currentPrice) - previousClose) / previousClose) * 100 : 0;
+
         if (currentPrice !== undefined && currentPrice !== null) {
-          // 3. Update the price field in both collections
-          await HoldingsModel.updateMany({ name: ticker }, { price: currentPrice });
-          await PositionsModel.updateMany({ name: ticker }, { price: currentPrice });
-          await WatchlistModel.updateMany({ name: ticker }, { price: currentPrice });
-          console.log(`[Yahoo Finance] Updated ${ticker} to ₹${currentPrice}`);
+          const [holdings, positions] = await Promise.all([
+            HoldingsModel.find({ name: ticker }),
+            PositionsModel.find({ name: ticker }),
+          ]);
+
+          await Promise.all([
+            ...holdings.map((holding) => {
+              const avg = toNumber(holding.avg);
+              const netChangePercent = avg > 0 ? ((toNumber(currentPrice) - avg) / avg) * 100 : 0;
+
+              return HoldingsModel.updateOne(
+                { _id: holding._id },
+                {
+                  price: currentPrice,
+                  net: formatSignedPercent(netChangePercent),
+                  day: formatSignedPercent(dayChangePercent),
+                  isLoss: dayChangePercent < 0,
+                }
+              );
+            }),
+            ...positions.map((position) => {
+              const avg = toNumber(position.avg);
+              const netChangePercent = avg > 0 ? ((toNumber(currentPrice) - avg) / avg) * 100 : 0;
+
+              return PositionsModel.updateOne(
+                { _id: position._id },
+                {
+                  price: currentPrice,
+                  net: formatSignedPercent(netChangePercent),
+                  day: formatSignedPercent(dayChangePercent),
+                  isLoss: dayChangePercent < 0,
+                }
+              );
+            }),
+            WatchlistModel.updateMany(
+              { name: ticker },
+              {
+                price: currentPrice,
+                percent: formatSignedPercent(dayChangePercent),
+                isDown: dayChangePercent < 0,
+              }
+            ),
+          ]);
+
+          console.log(`[Yahoo Finance] Updated ${ticker} to Rs.${currentPrice}`);
         }
-      } catch (err) {
-        console.error(`[Yahoo Finance Error] Failed to fetch/update price for ${ticker}. Make sure the symbol exists on Yahoo Finance.`);
+      } catch (error) {
+        console.error(
+          `[Yahoo Finance Error] Failed to fetch/update price for ${ticker}. Make sure the symbol exists on Yahoo Finance.`
+        );
       }
     });
 
     await Promise.allSettled(fetchPromises);
   } catch (error) {
-    console.error('Error in price updater interval:', error);
+    console.error("Error in price updater interval:", error);
+  } finally {
+    isUpdating = false;
   }
 }
 
 function startPriceUpdater() {
-  console.log('⏳ Starting live price updater (runs every 10 seconds)...');
-  
-  // Run immediately once
+  console.log(
+    `[Yahoo Finance] Starting live price updater (runs every ${REFRESH_INTERVAL_MS / 1000} seconds)...`
+  );
+
   updatePrices();
-  
-  // Set interval for every 10 seconds (10000 ms)
-  setInterval(updatePrices, 10000);
+  setInterval(updatePrices, REFRESH_INTERVAL_MS);
 }
 
 module.exports = startPriceUpdater;

@@ -2,6 +2,7 @@
 import api from "../api";
 import GeneralContext from "./GeneralContext";
 
+const REFRESH_INTERVAL_MS = 3000;
 const toNumber = (value) => Number(value) || 0;
 
 const Positions = () => {
@@ -23,7 +24,7 @@ const Positions = () => {
     };
 
     fetchPositions();
-    const intervalId = setInterval(fetchPositions, 10000);
+    const intervalId = setInterval(fetchPositions, REFRESH_INTERVAL_MS);
 
     return () => clearInterval(intervalId);
   }, [generalContext.tradeRefreshTrigger]);
@@ -162,7 +163,7 @@ const Positions = () => {
                     {isProfit ? "+" : ""}
                     {pnl.toFixed(2)}
                   </td>
-                  <td className={dayClass}>{stock.net || "0.00%"}</td>
+                  <td className={profClass}>{stock.net || "0.00%"}</td>
                   <td>
                     <button
                       className="btn btn-primary"

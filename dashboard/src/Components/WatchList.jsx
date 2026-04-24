@@ -17,6 +17,8 @@ import {
 } from "@mui/icons-material";
 import "./WatchList.css";
 
+const REFRESH_INTERVAL_MS = 3000;
+
 const WatchList = () => {
   const [watchlist, setWatchlist] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -37,7 +39,7 @@ const WatchList = () => {
     };
 
     fetchWatchlist();
-    const intervalId = setInterval(fetchWatchlist, 10000);
+    const intervalId = setInterval(fetchWatchlist, REFRESH_INTERVAL_MS);
     return () => clearInterval(intervalId);
   }, []);
 

@@ -3,6 +3,7 @@ import api from "../api";
 import GeneralContext from "./GeneralContext";
 import { DoughnutChart } from "./DoughnoutChart";
 
+const REFRESH_INTERVAL_MS = 3000;
 const toNumber = (value) => Number(value) || 0;
 const formatMoney = (value) =>
   Number(value || 0).toLocaleString("en-IN", {
@@ -17,17 +18,24 @@ const Summary = () => {
   const generalContext = React.useContext(GeneralContext);
 
   useEffect(() => {
-    Promise.all([
-      api.get("/allHoldings"),
-      api.get("/userFunds"),
-      api.get("/allWatchlist"),
-    ])
-      .then(([hRes, bRes, wRes]) => {
-        setHoldings(hRes.data || []);
-        setBalance(bRes.data?.balance || 0);
-        setWatchlist(wRes.data || []);
-      })
-      .catch((err) => console.error("Error fetching summary data:", err));
+    const fetchSummaryData = () => {
+      Promise.all([
+        api.get("/allHoldings"),
+        api.get("/userFunds"),
+        api.get("/allWatchlist"),
+      ])
+        .then(([hRes, bRes, wRes]) => {
+          setHoldings(hRes.data || []);
+          setBalance(bRes.data?.balance || 0);
+          setWatchlist(wRes.data || []);
+        })
+        .catch((err) => console.error("Error fetching summary data:", err));
+    };
+
+    fetchSummaryData();
+    const intervalId = setInterval(fetchSummaryData, REFRESH_INTERVAL_MS);
+
+    return () => clearInterval(intervalId);
   }, [generalContext.tradeRefreshTrigger]);
 
   const totalInvestment = holdings.reduce(

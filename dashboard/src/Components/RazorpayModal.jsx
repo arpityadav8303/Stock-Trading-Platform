@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import "./RazorpayModal.css";
 
 const RazorpayModal = ({ isOpen, onClose, onConfirm }) => {
@@ -40,7 +40,7 @@ const RazorpayModal = ({ isOpen, onClose, onConfirm }) => {
               <p>Add funds to your wallet</p>
             </div>
             <div className="amount-input">
-              <label>Amount (₹)</label>
+              <label>Amount (â‚¹)</label>
               <input
                 type="number"
                 placeholder="Enter Amount"
@@ -70,7 +70,7 @@ const RazorpayModal = ({ isOpen, onClose, onConfirm }) => {
           <div className="razorpay-body status">
             <div className="success-icon">&#10004;</div>
             <h3>Payment Successful</h3>
-            <p>₹{amount} added to your wallet</p>
+            <p>â‚¹{amount} added to your wallet</p>
           </div>
         )}
 

@@ -1,4 +1,4 @@
-export const watchlist = [
+﻿xport const watchlist = [
   {
     name: "INFY",
     price: 1555.45,
