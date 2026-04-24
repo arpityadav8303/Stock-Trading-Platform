@@ -1,83 +1,76 @@
 import React, { useRef, useMemo } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { Float, PerspectiveCamera, Stars, Text, Torus, Octahedron, MeshDistortMaterial } from "@react-three/drei";
+import { PerspectiveCamera, Float, Sparkles, Grid } from "@react-three/drei";
 import * as THREE from "three";
 
-// A floating trading candle
-const TradingCandle = ({ position, color, height }) => {
+// A stylized 3D Candlestick
+const Candlestick = ({ position, color, height, scale = 1 }) => {
   return (
-    <Float speed={1.5} rotationIntensity={0.5} floatIntensity={1}>
-      <group position={position}>
-        {/* Wick */}
-        <mesh position={[0, 0, 0]}>
-          <boxGeometry args={[0.05, height + 0.5, 0.05]} />
-          <meshBasicMaterial color={color} transparent opacity={0.4} />
-        </mesh>
-        {/* Body */}
-        <mesh position={[0, 0, 0]}>
-          <boxGeometry args={[0.3, height, 0.3]} />
-          <meshStandardMaterial color={color} transparent opacity={0.7} emissive={color} emissiveIntensity={0.5} />
-        </mesh>
-      </group>
-    </Float>
-  );
-};
-
-// Floating currency symbols or geometric representations of "money"
-const MoneyParticle = ({ position, color }) => {
-  return (
-    <Float speed={2} rotationIntensity={2} floatIntensity={2}>
-      <mesh position={position}>
-        <octahedronGeometry args={[0.4, 0]} />
-        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={1} wireframe />
+    <group position={position} scale={scale}>
+      {/* Wick */}
+      <mesh position={[0, 0, 0]}>
+        <cylinderGeometry args={[0.03, 0.03, height + 2, 8]} />
+        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={1} />
       </mesh>
-    </Float>
-  );
-};
-
-const DigitalGrid = () => {
-  const gridRef = useRef();
-  
-  useFrame((state) => {
-    const t = state.clock.getElapsedTime();
-    if (gridRef.current) {
-      gridRef.current.position.z = (t * 2) % 10;
-    }
-  });
-
-  return (
-    <group ref={gridRef}>
-      <gridHelper args={[100, 50, "#1e293b", "#0f172a"]} rotation={[Math.PI / 2, 0, 0]} position={[0, 0, -10]} />
+      {/* Body */}
+      <mesh position={[0, 0, 0]}>
+        <boxGeometry args={[0.4, height, 0.4]} />
+        <meshStandardMaterial 
+          color={color} 
+          transparent 
+          opacity={0.9} 
+          emissive={color} 
+          emissiveIntensity={0.6} 
+          metalness={0.8}
+          roughness={0.2}
+        />
+      </mesh>
     </group>
   );
 };
 
-const MovingParticles = () => {
-  const count = 100;
-  const particles = useMemo(() => {
+// Animated Market Trend positioned on the right side of the screen
+const MarketTrend = () => {
+  const groupRef = useRef();
+  const count = 50; 
+
+  const candles = useMemo(() => {
     const temp = [];
+    let currentY = 0;
     for (let i = 0; i < count; i++) {
+      const isUp = Math.random() > 0.45; 
+      const change = Math.random() * 2.5;
+      currentY += isUp ? change : -change;
+      
       temp.push({
-        position: [
-          (Math.random() - 0.5) * 40,
-          (Math.random() - 0.5) * 40,
-          (Math.random() - 0.5) * 20,
-        ],
-        color: Math.random() > 0.5 ? "#10b981" : "#f43f5e",
-        height: Math.random() * 2 + 0.5,
+        z: -i * 1.8, 
+        y: currentY,
+        color: isUp ? "#00e676" : "#ff3366", // Neon Green or Red
+        height: Math.max(0.5, Math.random() * 4),
       });
     }
     return temp;
-  }, []);
+  }, [count]);
+
+  useFrame((state) => {
+    const t = state.clock.getElapsedTime();
+    if (groupRef.current) {
+      // Moves the chart smoothly towards the camera
+      groupRef.current.position.z = (t * 3.5) % 1.8;
+    }
+  });
 
   return (
-    <group>
-      {particles.map((p, i) => (
-        i % 5 === 0 ? (
-          <TradingCandle key={i} position={p.position} color={p.color} height={p.height} />
-        ) : (
-          <MoneyParticle key={i} position={p.position} color={p.color} />
-        )
+    // Shifted to the right (x=6) and angled to face the camera beautifully
+    <group ref={groupRef} position={[6, -3, -15]} rotation={[0.1, -0.3, 0]}>
+      {candles.map((c, i) => (
+        <Candlestick 
+          key={i} 
+          // Slight curve to the path
+          position={[Math.sin(i * 0.15) * 3, c.y * 0.25, c.z]} 
+          color={c.color} 
+          height={c.height} 
+        />
       ))}
     </group>
   );
@@ -85,53 +78,50 @@ const MovingParticles = () => {
 
 const AuthBackground = () => {
   return (
-    <div
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        width: "100%",
-        height: "100%",
-        zIndex: -1,
-        background: "linear-gradient(135deg, #020617 0%, #0f172a 50%, #020617 100%)",
-      }}
-    >
+    <div className="auth-canvas-container">
       <Canvas dpr={[1, 2]}>
-        <PerspectiveCamera makeDefault position={[0, 0, 20]} fov={50} />
-        <ambientLight intensity={0.5} />
-        <pointLight position={[10, 10, 10]} intensity={1.5} color="#6366f1" />
-        <pointLight position={[-10, -10, -10]} intensity={1} color="#10b981" />
+        {/* Adjusted camera to look slightly down and right */}
+        <PerspectiveCamera makeDefault position={[0, 3, 10]} fov={55} />
+        <fog attach="fog" args={["#030b17", 8, 35]} />
         
-        <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
+        <ambientLight intensity={0.3} />
+        <directionalLight position={[10, 20, 5]} intensity={2} color="#ffffff" />
+        <pointLight position={[-10, 0, -10]} intensity={1.5} color="#00e676" />
+        <pointLight position={[10, -5, -10]} intensity={2} color="#1e3a8a" />
         
-        <DigitalGrid />
-        <MovingParticles />
+        {/* Cyberpunk/Fintech Floor Grid */}
+        <Grid 
+          position={[0, -5, 0]} 
+          args={[100, 100]} 
+          cellSize={1} 
+          cellThickness={1} 
+          cellColor="#1e3a8a" 
+          sectionSize={5} 
+          sectionThickness={1.5} 
+          sectionColor="#00e676" 
+          fadeDistance={40} 
+          fadeStrength={1} 
+        />
+
+        {/* Ambient floating data points */}
+        <Sparkles count={200} scale={25} size={2} speed={0.2} color="#00e676" opacity={0.4} />
+
+        <MarketTrend />
         
-        {/* Central glowing orb behind the card */}
-        <Float speed={2} rotationIntensity={1} floatIntensity={1}>
-          <mesh position={[0, 0, -5]}>
-            <sphereGeometry args={[8, 32, 32]} />
-            <MeshDistortMaterial
-              color="#1e293b"
-              transparent
-              opacity={0.3}
-              distort={0.4}
-              speed={2}
+        {/* Distant tech sphere to anchor the background */}
+        <Float speed={2} rotationIntensity={1} floatIntensity={2}>
+          <mesh position={[12, 5, -25]}>
+            <icosahedronGeometry args={[4, 1]} />
+            <meshStandardMaterial 
+              color="#030b17" 
+              emissive="#1e3a8a" 
+              emissiveIntensity={0.8} 
+              wireframe 
             />
           </mesh>
         </Float>
       </Canvas>
-      
-      {/* Decorative overlay for extra depth */}
-      <div style={{
-        position: "absolute",
-        top: 0,
-        left: 0,
-        width: "100%",
-        height: "100%",
-        background: "radial-gradient(circle at center, transparent 30%, rgba(2, 6, 23, 0.7) 100%)",
-        pointerEvents: "none"
-      }} />
+      <div className="auth-overlay-gradient"></div>
     </div>
   );
 };
