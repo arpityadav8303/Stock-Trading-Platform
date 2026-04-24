@@ -1,9 +1,9 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import api from "../api";
 import GeneralContext from "./GeneralContext";
 import { DoughnutChart } from "./DoughnoutChart";
 
-const REFRESH_INTERVAL_MS = 3000;
+const REFRESH_INTERVAL_MS = 10000;
 const toNumber = (value) => Number(value) || 0;
 const formatMoney = (value) =>
   Number(value || 0).toLocaleString("en-IN", {
@@ -15,6 +15,7 @@ const Summary = () => {
   const [holdings, setHoldings] = useState([]);
   const [balance, setBalance] = useState(0);
   const [watchlist, setWatchlist] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const generalContext = React.useContext(GeneralContext);
 
   useEffect(() => {
@@ -29,7 +30,8 @@ const Summary = () => {
           setBalance(bRes.data?.balance || 0);
           setWatchlist(wRes.data || []);
         })
-        .catch((err) => console.error("Error fetching summary data:", err));
+        .catch((err) => console.error("Error fetching summary data:", err))
+        .finally(() => setIsLoading(false));
     };
 
     fetchSummaryData();
@@ -48,6 +50,15 @@ const Summary = () => {
   );
   const pnl = currentValue - totalInvestment;
   const pnlPercent = totalInvestment > 0 ? ((pnl / totalInvestment) * 100).toFixed(2) : 0;
+  const positiveHoldings = holdings.filter((stock) => String(stock.net || "").startsWith("+")).length;
+  const negativeHoldings = Math.max(holdings.length - positiveHoldings, 0);
+  const topHolding = holdings.reduce((best, stock) => {
+    if (!best) return stock;
+
+    const bestValue = toNumber(best.price) * toNumber(best.qty);
+    const stockValue = toNumber(stock.price) * toNumber(stock.qty);
+    return stockValue > bestValue ? stock : best;
+  }, null);
 
   const chartData = {
     labels: watchlist.map((s) => s.name),
@@ -56,11 +67,11 @@ const Summary = () => {
         label: "Price",
         data: watchlist.map((s) => toNumber(s.price)),
         backgroundColor: [
-          "#4f46e5",
+          "#2563eb",
           "#10b981",
           "#f59e0b",
           "#ef4444",
-          "#8b5cf6",
+          "#0f766e",
           "#ec4899",
           "#06b6d4",
           "#84cc16",
@@ -75,13 +86,54 @@ const Summary = () => {
 
   return (
     <div className="summary-page">
-      <div className="username">
-        <h3 className="title" style={{ marginBottom: "8px" }}>
-          Dashboard Overview
-        </h3>
-        <p style={{ color: "var(--text-muted)", fontSize: "0.9rem", marginBottom: "32px" }}>
-          Welcome back! Here's what's happening with your portfolio today.
-        </p>
+      <div className="hero-panel">
+        <div className="hero-panel-copy">
+          <span className="hero-eyebrow">Market Snapshot</span>
+          <h3 className="title" style={{ marginBottom: "8px" }}>
+            Dashboard Overview
+          </h3>
+          <p className="hero-text">
+            Track capital, live exposure, and your strongest portfolio signals in one place.
+          </p>
+        </div>
+        <div className="hero-chip-row">
+          <div className="hero-chip">
+            <span className="hero-chip-label">Holdings</span>
+            <strong>{holdings.length}</strong>
+          </div>
+          <div className="hero-chip">
+            <span className="hero-chip-label">Watchlist</span>
+            <strong>{watchlist.length}</strong>
+          </div>
+          <div className="hero-chip">
+            <span className="hero-chip-label">Refresh</span>
+            <strong>3s</strong>
+          </div>
+        </div>
+      </div>
+
+      <div className="summary-grid">
+        <div className="summary-mini-card">
+          <span className="summary-mini-label">Portfolio Mood</span>
+          <strong className={pnl >= 0 ? "profit" : "loss"}>
+            {pnl >= 0 ? "In Profit" : "Under Pressure"}
+          </strong>
+          <p>{positiveHoldings} green and {negativeHoldings} red counters right now.</p>
+        </div>
+        <div className="summary-mini-card">
+          <span className="summary-mini-label">Top Exposure</span>
+          <strong>{topHolding?.name || "No holdings yet"}</strong>
+          <p>
+            {topHolding
+              ? `₹${formatMoney(toNumber(topHolding.price) * toNumber(topHolding.qty))} current value`
+              : "Add your first holding to unlock deeper portfolio insights."}
+          </p>
+        </div>
+        <div className="summary-mini-card">
+          <span className="summary-mini-label">Cash Readiness</span>
+          <strong>₹{formatMoney(balance)}</strong>
+          <p>{balance > 0 ? "Capital ready for the next trade setup." : "No available balance right now."}</p>
+        </div>
       </div>
 
       <div className="section">
@@ -133,6 +185,25 @@ const Summary = () => {
         </div>
       </div>
 
+      {isLoading && (
+        <div className="section empty-state-panel">
+          <span className="section-title">Loading</span>
+          <div className="empty-state-icon">...</div>
+          <p>Refreshing portfolio metrics and watchlist allocation.</p>
+        </div>
+      )}
+
+      {!isLoading && holdings.length === 0 && (
+        <div className="section empty-state-panel">
+          <span className="section-title">Portfolio Starter</span>
+          <div className="empty-state-icon">+</div>
+          <p>
+            No holdings yet. Once you place your first order, this dashboard will light up with live
+            allocation and P&amp;L insights.
+          </p>
+        </div>
+      )}
+
       {watchlist.length > 0 && (
         <div className="section">
           <span className="section-title">Watchlist Distribution</span>
@@ -155,4 +226,3 @@ const Summary = () => {
 };
 
 export default Summary;
-

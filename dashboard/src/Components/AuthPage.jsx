@@ -1,6 +1,7 @@
-﻿import React, { useState } from "react";
+import React, { useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "./AuthContext";
+import AuthBackground from "./AuthBackground";
 
 const AuthPage = () => {
   const { isAuthenticated, login, register } = useAuth();
@@ -34,9 +35,11 @@ const AuthPage = () => {
 
   return (
     <div className="auth-page">
+      <AuthBackground />
       <div className="auth-card">
-        <h1>{isLoginMode ? "Login" : "Create Account"}</h1>
-        <p>{isLoginMode ? "Welcome back to FinSprint" : "Start trading with your private workspace"}</p>
+        <div className="auth-card-content">
+          <h1>{isLoginMode ? "Login" : "Create Account"}</h1>
+          <p>{isLoginMode ? "Welcome back to FinSprint" : "Start trading with your private workspace"}</p>
 
         <form onSubmit={onSubmit} className="auth-form">
           {!isLoginMode && (
@@ -76,7 +79,8 @@ const AuthPage = () => {
         </button>
       </div>
     </div>
-  );
+  </div>
+);
 };
 
 export default AuthPage;

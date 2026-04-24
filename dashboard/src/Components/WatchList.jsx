@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useContext, useRef, useCallback } from "react";
+import React, { useState, useEffect, useContext, useRef, useCallback } from "react";
 import api from "../api";
 import GeneralContext from "./GeneralContext";
 import { Tooltip, Grow } from "@mui/material";
@@ -6,7 +6,6 @@ import {
   BarChartOutlined,
   KeyboardArrowDown,
   KeyboardArrowUp,
-  MoreHoriz,
   Search,
   Close,
   Add,
@@ -17,7 +16,9 @@ import {
 } from "@mui/icons-material";
 import "./WatchList.css";
 
-const REFRESH_INTERVAL_MS = 3000;
+const REFRESH_INTERVAL_MS = 10000;
+const toNumber = (value) => Number(value) || 0;
+const formatMoney = (value) => toNumber(value).toFixed(2);
 
 const WatchList = () => {
   const [watchlist, setWatchlist] = useState([]);
@@ -26,16 +27,19 @@ const WatchList = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [notification, setNotification] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const searchRef = useRef(null);
   const searchContainerRef = useRef(null);
   const debounceRef = useRef(null);
 
-  // Fetch watchlist
   useEffect(() => {
     const fetchWatchlist = () => {
-      api.get("/allWatchlist").then((res) => {
-        setWatchlist(res.data || []);
-      });
+      api
+        .get("/allWatchlist")
+        .then((res) => {
+          setWatchlist(res.data || []);
+        })
+        .finally(() => setIsLoading(false));
     };
 
     fetchWatchlist();
@@ -43,7 +47,6 @@ const WatchList = () => {
     return () => clearInterval(intervalId);
   }, []);
 
-  // Click outside to close search
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (searchContainerRef.current && !searchContainerRef.current.contains(e.target)) {
@@ -55,7 +58,6 @@ const WatchList = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Debounced search
   const handleSearch = useCallback((query) => {
     setSearchQuery(query);
 
@@ -90,10 +92,8 @@ const WatchList = () => {
     try {
       await api.post("/addToWatchlist", { name: stockName });
       showNotification(`${stockName} added to watchlist`);
-      // Refresh watchlist
       const res = await api.get("/allWatchlist");
       setWatchlist(res.data || []);
-      // Refresh search results to update inWatchlist status
       if (searchQuery.trim()) {
         const searchRes = await api.get(`/searchStocks?q=${encodeURIComponent(searchQuery)}`);
         setSearchResults(searchRes.data || []);
@@ -109,7 +109,6 @@ const WatchList = () => {
       showNotification(`${stockName} removed from watchlist`);
       const res = await api.get("/allWatchlist");
       setWatchlist(res.data || []);
-      // Refresh search results
       if (searchQuery.trim()) {
         const searchRes = await api.get(`/searchStocks?q=${encodeURIComponent(searchQuery)}`);
         setSearchResults(searchRes.data || []);
@@ -128,7 +127,6 @@ const WatchList = () => {
 
   return (
     <div className="watchlist-container">
-      {/* Notification Toast */}
       {notification && (
         <div className={`wl-toast ${notification.type === "error" ? "wl-toast-error" : "wl-toast-success"}`}>
           {notification.type === "error" ? (
@@ -140,7 +138,6 @@ const WatchList = () => {
         </div>
       )}
 
-      {/* Search Area */}
       <div className="wl-search-area" ref={searchContainerRef}>
         <div className={`wl-search-box ${isSearchFocused ? "wl-search-box-active" : ""}`}>
           <Search className="wl-search-icon" />
@@ -160,7 +157,6 @@ const WatchList = () => {
           )}
         </div>
 
-        {/* Search Results Dropdown */}
         {isSearchFocused && (searchQuery.trim() || isSearching) && (
           <div className="wl-search-dropdown">
             {isSearching ? (
@@ -227,9 +223,14 @@ const WatchList = () => {
         </div>
       </div>
 
-      {/* Watchlist Items */}
       <ul className="list" style={{ listStyle: "none", padding: 0, margin: 0, overflowY: "auto", flex: 1, minHeight: 0 }}>
-        {watchlist.length === 0 ? (
+        {isLoading ? (
+          <div className="wl-empty-state">
+            <TrendingUp style={{ fontSize: "2.5rem", color: "var(--text-light)", marginBottom: "12px" }} />
+            <p>Loading your live watchlist</p>
+            <span>Pulling fresh quotes and watchlist items.</span>
+          </div>
+        ) : watchlist.length === 0 ? (
           <div className="wl-empty-state">
             <TrendingUp style={{ fontSize: "2.5rem", color: "var(--text-light)", marginBottom: "12px" }} />
             <p>No stocks in watchlist</p>
@@ -252,6 +253,9 @@ const WatchList = () => {
 export default WatchList;
 
 const WatchListItem = ({ stock, onRemove }) => {
+  const sparkSegments = [28, 48, 34, 60, 42, 72];
+  const trendClass = stock.isDown ? "loss" : "profit";
+
   return (
     <li className="wl-stock-row">
       <div
@@ -263,10 +267,25 @@ const WatchListItem = ({ stock, onRemove }) => {
           alignItems: "center",
         }}
       >
-        <p className={stock.isDown ? "loss" : "profit"} style={{ fontWeight: "700", margin: 0 }}>
-          {stock.name}
-        </p>
+        <div className="wl-row-left">
+          <div className={`wl-live-dot ${stock.isDown ? "wl-live-dot-down" : ""}`}></div>
+          <div>
+            <p className={trendClass} style={{ fontWeight: "700", margin: 0 }}>
+              {stock.name}
+            </p>
+            <span className="wl-subcopy">Live market watch</span>
+          </div>
+        </div>
         <div className="itemInfo wl-item-info" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <div className="wl-mini-sparkline" aria-hidden="true">
+            {sparkSegments.map((height, index) => (
+              <span
+                key={`${stock.name}-spark-${index}`}
+                className={`wl-spark-bar ${stock.isDown ? "wl-spark-bar-down" : ""}`}
+                style={{ height: `${height}%` }}
+              />
+            ))}
+          </div>
           <span className="percent" style={{ fontSize: "0.75rem", fontWeight: "600" }}>
             {stock.percent}
           </span>
@@ -276,7 +295,7 @@ const WatchListItem = ({ stock, onRemove }) => {
             <KeyboardArrowUp style={{ fontSize: "1rem" }} className="profit" />
           )}
           <span className="price" style={{ fontFamily: "JetBrains Mono", fontWeight: "700" }}>
-            {stock.price?.toFixed(2)}
+            {formatMoney(stock.price)}
           </span>
         </div>
       </div>
@@ -301,7 +320,7 @@ const WatchListActions = ({ uid, price, onRemove }) => {
         </button>
       </Tooltip>
       <Tooltip title="Chart" placement="top" arrow TransitionComponent={Grow}>
-        <button className="btn wl-row-icon-btn">
+        <button className="btn wl-row-icon-btn" onClick={() => generalContext.openChartWindow(uid, price)}>
           <BarChartOutlined style={{ fontSize: "1.1rem" }} />
         </button>
       </Tooltip>
@@ -313,4 +332,3 @@ const WatchListActions = ({ uid, price, onRemove }) => {
     </div>
   );
 };
-

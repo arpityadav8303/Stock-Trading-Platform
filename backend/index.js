@@ -282,6 +282,110 @@ app.get("/marketIndices", requireAuth, async (req, res) => {
   }
 });
 
+app.get("/stockChart/:symbol", requireAuth, async (req, res) => {
+  const stockName = String(req.params.symbol || "").trim().toUpperCase();
+  const requestedRange = String(req.query.range || "1mo").trim();
+  const allowedRanges = new Set(["5d", "1mo", "3mo", "6mo", "1y"]);
+  const range = allowedRanges.has(requestedRange) ? requestedRange : "1mo";
+
+  if (!stockName) {
+    return res.status(400).json({ message: "Stock symbol is required" });
+  }
+
+  try {
+    const buildChartQuery = () => {
+      const now = new Date();
+      const period1 = new Date(now);
+
+      if (range === "5d") {
+        period1.setDate(now.getDate() - 5);
+        return { period1, period2: now, interval: "5m" };
+      }
+      if (range === "3mo") {
+        period1.setMonth(now.getMonth() - 3);
+      } else if (range === "6mo") {
+        period1.setMonth(now.getMonth() - 6);
+      } else if (range === "1y") {
+        period1.setFullYear(now.getFullYear() - 1);
+      } else {
+        period1.setMonth(now.getMonth() - 1);
+      }
+
+      return { period1, period2: now, interval: "1d" };
+    };
+
+    const fetchChart = async () => {
+      const query = buildChartQuery();
+      const symbolsToTry = [`${stockName}.NS`, `${stockName}.BO`, stockName];
+      let lastError;
+
+      for (const symbol of symbolsToTry) {
+        try {
+          const result = await yahooFinance.chart(symbol, query);
+          if (result?.quotes?.length) {
+            return result;
+          }
+        } catch (error) {
+          lastError = error;
+        }
+      }
+
+      throw lastError || new Error("No chart data found");
+    };
+
+    const [chartResult, holding, position] = await Promise.all([
+      fetchChart(),
+      HoldingsModel.findOne({ userId: req.user.userId, name: stockName }),
+      PositionsModel.findOne({ userId: req.user.userId, name: stockName }),
+    ]);
+
+    const points = (chartResult?.quotes || [])
+      .filter((quote) => Number.isFinite(Number(quote.close)) && quote.date)
+      .map((quote) => ({
+        date: quote.date,
+        close: Number(quote.close),
+        open: Number(quote.open) || Number(quote.close),
+        high: Number(quote.high) || Number(quote.close),
+        low: Number(quote.low) || Number(quote.close),
+        volume: Number(quote.volume) || 0,
+      }));
+
+    if (!points.length) {
+      return res.status(404).json({ message: "No chart data found for this stock" });
+    }
+
+    const latestPrice = Number(chartResult?.meta?.regularMarketPrice) || points[points.length - 1].close;
+    const previousClose = Number(chartResult?.meta?.previousClose) || latestPrice;
+
+    return res.json({
+      symbol: stockName,
+      range,
+      currency: chartResult?.meta?.currency || "INR",
+      latestPrice,
+      previousClose,
+      change: latestPrice - previousClose,
+      changePercent: previousClose > 0 ? ((latestPrice - previousClose) / previousClose) * 100 : 0,
+      points,
+      holding: holding
+        ? {
+            qty: Number(holding.qty) || 0,
+            avg: Number(holding.avg) || 0,
+          }
+        : null,
+      position: position
+        ? {
+            qty: Number(position.qty) || 0,
+            avg: Number(position.avg) || 0,
+            product: position.product || "MIS",
+          }
+        : null,
+    });
+  } catch (error) {
+    console.error("Error fetching stock chart:", error);
+    return res.status(500).json({ message: "Failed to fetch chart for this stock" });
+  }
+});
+
 app.post("/addFunds", requireAuth, async (req, res) => {
   const amount = Number(req.body?.amount);
   if (!Number.isFinite(amount) || amount <= 0) {

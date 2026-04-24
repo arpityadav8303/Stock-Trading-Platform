@@ -27,13 +27,13 @@ const BuyActionWindow = ({ uid }) => {
     const price = toNumber(stockPrice);
 
     if (quantity <= 0 || price <= 0) {
-      alert("Quantity and price must be greater than 0");
+      generalContext.showNotification("Quantity and price must be greater than 0", "error");
       return;
     }
 
     const totalCost = quantity * price;
     if (totalCost > userFunds) {
-      alert("Insufficient funds in your wallet!");
+      generalContext.showNotification("Insufficient funds in your wallet", "error");
       return;
     }
 
@@ -56,11 +56,11 @@ const BuyActionWindow = ({ uid }) => {
         isLoss: false,
       });
 
-      alert(`Successfully bought ${quantity} shares of ${uid}`);
+      generalContext.showNotification(`Bought ${quantity} share(s) of ${uid}`, "success");
       generalContext.notifyTradeComplete();
       generalContext.closeBuyWindow();
     } catch (error) {
-      alert(error.response?.data?.message || "Failed to place order");
+      generalContext.showNotification(error.response?.data?.message || "Failed to place order", "error");
     }
   };
 

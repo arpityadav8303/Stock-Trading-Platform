@@ -1,8 +1,8 @@
-﻿import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import api from "../api";
 import GeneralContext from "./GeneralContext";
 
-const REFRESH_INTERVAL_MS = 3000;
+const REFRESH_INTERVAL_MS = 10000;
 const toNumber = (value) => Number(value) || 0;
 const formatMoney = (value) =>
   Number(value || 0).toLocaleString("en-IN", {
@@ -86,9 +86,9 @@ const Holdings = () => {
 
       setSelectedRows([]);
       generalContext.notifyTradeComplete();
-      alert(`${selectedStocks.length} holding(s) closed successfully`);
+      generalContext.showNotification(`${selectedStocks.length} holding(s) closed successfully`, "success");
     } catch (error) {
-      alert(error.response?.data?.message || "Failed to close selected holdings");
+      generalContext.showNotification(error.response?.data?.message || "Failed to close selected holdings", "error");
     } finally {
       setIsClosingSelected(false);
     }

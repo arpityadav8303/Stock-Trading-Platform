@@ -1,8 +1,8 @@
-﻿import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import api from "../api";
 import GeneralContext from "./GeneralContext";
 
-const REFRESH_INTERVAL_MS = 3000;
+const REFRESH_INTERVAL_MS = 10000;
 const toNumber = (value) => Number(value) || 0;
 
 const Positions = () => {
@@ -69,9 +69,9 @@ const Positions = () => {
 
       setSelectedRows([]);
       generalContext.notifyTradeComplete();
-      alert(`${selectedStocks.length} position(s) closed successfully`);
+      generalContext.showNotification(`${selectedStocks.length} position(s) closed successfully`, "success");
     } catch (error) {
-      alert(error.response?.data?.message || "Failed to close selected positions");
+      generalContext.showNotification(error.response?.data?.message || "Failed to close selected positions", "error");
     } finally {
       setIsClosingSelected(false);
     }
