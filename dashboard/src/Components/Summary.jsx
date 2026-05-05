@@ -217,7 +217,7 @@ const Summary = () => {
               padding: "16px 0",
             }}
           >
-            <DoughnutChart data={chartData} />
+            {/* <DoughnutChart data={chartData} /> */}
           </div>
         </div>
       )}

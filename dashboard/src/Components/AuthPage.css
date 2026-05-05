@@ -1,179 +1,287 @@
-/* Container positioning */
-.auth-page {
-  position: relative;
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden;
-  background-color: #030b17; /* Deeper space blue */
-  font-family: 'Inter', -apple-system, sans-serif;
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Playfair+Display:wght@700&display=swap');
+
+.auth-root {
+    height: 100vh;
+    width: 100%;
+    background: url('/bg.png') no-repeat center center/cover;
+    overflow: hidden;
+    position: relative;
+    font-family: 'Outfit', sans-serif;
 }
 
-.auth-canvas-container {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 0;
+/* Add a dark vintage overlay to the background image */
+.auth-root::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to right, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.85));
+    z-index: 1;
 }
 
-/* Push the gradient overlay slightly to the left so the right side is clearer */
-.auth-overlay-gradient {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, rgba(3, 11, 23, 0.95) 0%, rgba(3, 11, 23, 0.7) 40%, transparent 100%);
-  pointer-events: none;
+/* LAYOUT */
+.ui {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-columns: 0.9fr 1.1fr;
+    padding: 0 10%;
+    z-index: 3;
+    /* Above overlay */
+    align-items: center;
+    column-gap: 4rem;
 }
 
-/* Glassmorphism Card - Moved to the Left */
-.auth-container {
-  position: absolute;
-  top: 50%;
-  left: 8%; /* Snaps to the left side */
-  transform: translateY(-50%);
-  z-index: 10;
-  width: 100%;
-  max-width: 440px;
+/* LEFT SIDE */
+.left {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    grid-column: 2;
+    grid-row: 1;
 }
 
-.glass-effect {
-  background: rgba(16, 33, 62, 0.35);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 24px;
-  padding: 40px 35px;
-  box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.6);
-  color: white;
+.brand-badge {
+    background: rgba(212, 175, 55, 0.1);
+    /* Gold tint */
+    color: #d4af37;
+    /* Metallic Gold */
+    padding: 6px 12px;
+    border-radius: 2px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 3px;
+    width: fit-content;
+    border: 1px solid rgba(212, 175, 55, 0.4);
+    margin-bottom: 20px;
+    text-transform: uppercase;
 }
 
-/* Typography */
-.brand-title {
-  color: #00e676;
-  font-size: 1.1rem;
-  text-transform: uppercase;
-  letter-spacing: 3px;
-  margin-bottom: 24px;
-  text-align: left; /* Aligned left for modern feel */
+.left h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 6rem;
+    font-weight: 700;
+    color: #ffffff;
+    margin: 0;
+    letter-spacing: -1px;
+    text-transform: uppercase;
+    background: linear-gradient(to bottom, #d4af37, #fcf6ba, #d4af37);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
 }
 
-.auth-header h2 {
-  font-size: 2.2rem;
-  margin: 0 0 12px 0;
-  font-weight: 700;
-  text-align: left;
+.tagline-container {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-top: 5px;
 }
 
-.auth-header p {
-  color: #94a3b8;
-  font-size: 1rem;
-  margin: 0 0 35px 0;
-  text-align: left;
-  line-height: 1.5;
+.tagline-line {
+    width: 60px;
+    height: 1px;
+    background: #d4af37;
 }
 
-/* Form Inputs */
-.auth-form {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
+.left p {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 1.1rem;
+    font-weight: 300;
+    margin: 0;
+    letter-spacing: 2px;
+    text-transform: uppercase;
 }
 
-.input-group input {
-  width: 100%;
-  padding: 16px 18px;
-  background: rgba(0, 0, 0, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  color: white;
-  font-size: 1rem;
-  transition: all 0.3s ease;
-  box-sizing: border-box;
+/* RIGHT SIDE (CARD) */
+.right {
+    display: flex;
+    justify-content: center;
+    grid-column: 1;
+    grid-row: 1;
+    transform: translateX(-2vw);
 }
 
-.input-group input:focus {
-  outline: none;
-  border-color: #00e676;
-  background: rgba(0, 0, 0, 0.4);
-  box-shadow: 0 0 0 4px rgba(0, 230, 118, 0.1);
+.auth-glass-card {
+    width: 420px;
+    background: rgba(10, 10, 10, 0.42);
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(212, 175, 55, 0.32);
+    border-radius: 4px;
+    /* Sharper corners for classic look */
+    padding: 45px;
+    box-shadow: 0 35px 90px rgba(0, 0, 0, 0.55);
+    position: relative;
 }
 
-.input-group input::placeholder {
-  color: #64748b;
+.auth-glass-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #d4af37, transparent);
 }
 
-/* Buttons */
-.auth-submit-btn {
-  margin-top: 15px;
-  padding: 16px;
-  background: #00e676;
-  color: #01160c;
-  border: none;
-  border-radius: 12px;
-  font-size: 1.1rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+.form-header {
+    margin-bottom: 40px;
+    text-align: center;
 }
 
-.auth-submit-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(0, 230, 118, 0.3);
-  background: #00ff88;
+.form-header h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 2rem;
+    color: #fcf6ba;
+    margin-bottom: 10px;
+    letter-spacing: 1px;
 }
 
-.auth-submit-btn:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-  transform: none;
+.market-status {
+    justify-content: center;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.65rem;
+    color: rgba(212, 175, 55, 0.6);
+    letter-spacing: 2px;
 }
 
-.auth-error {
-  background: rgba(255, 51, 102, 0.15);
-  color: #ff3366;
-  padding: 14px;
-  border-radius: 10px;
-  font-size: 0.95rem;
-  text-align: left;
-  border: 1px solid rgba(255, 51, 102, 0.3);
+.dot {
+    width: 5px;
+    height: 5px;
+    background: #d4af37;
+    border-radius: 50%;
+    box-shadow: 0 0 8px #d4af37;
 }
 
-/* Footer Switch */
-.auth-footer {
-  margin-top: 30px;
-  text-align: left;
+/* INPUTS */
+.field {
+    position: relative;
+    margin-bottom: 30px;
 }
 
-.auth-switch-btn {
-  background: none;
-  border: none;
-  color: #94a3b8;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: color 0.2s ease;
-  padding: 0;
+.field input {
+    width: 100%;
+    padding: 12px 0 12px 35px;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.15);
+    color: #fff;
+    font-size: 1rem;
+    transition: all 0.4s;
 }
 
-.auth-switch-btn:hover {
-  color: #00e676;
+.field input:-webkit-autofill,
+.field input:-webkit-autofill:hover,
+.field input:-webkit-autofill:focus,
+.field input:-webkit-autofill:active {
+    -webkit-text-fill-color: #fff;
+    caret-color: #fff;
+    box-shadow: 0 0 0 1000px rgba(12, 10, 6, 0.72) inset;
+    transition: background-color 9999s ease-in-out 0s;
 }
 
-/* Simple CSS Loader */
-.loader {
-  width: 22px;
-  height: 22px;
-  border: 3px solid rgba(1, 22, 12, 0.3);
-  border-radius: 50%;
-  border-top-color: #01160c;
-  animation: spin 1s linear infinite;
+.field label {
+    position: absolute;
+    top: 12px;
+    left: 35px;
+    color: rgba(255, 255, 255, 0.4);
+    pointer-events: none;
+    transition: 0.3s;
+    font-size: 0.9rem;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
+.field-icon {
+    position: absolute;
+    left: 0;
+    top: 12px;
+    font-size: 1rem;
+    color: #d4af37;
+    opacity: 0.6;
+}
+
+.field input:focus {
+    outline: none;
+    border-bottom: 1px solid #d4af37;
+    background: rgba(212, 175, 55, 0.05);
+}
+
+.field input:focus+label,
+.field input:not(:placeholder-shown)+label,
+.field input:valid+label {
+    top: -15px;
+    left: 0;
+    font-size: 0.7rem;
+    color: #d4af37;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* SUBMIT BUTTON */
+.submit-btn {
+    width: 100%;
+    padding: 18px;
+    margin-top: 15px;
+    background: linear-gradient(135deg, #d4af37, #aa891e);
+    color: #000;
+    border: none;
+    border-radius: 2px;
+    font-size: 0.85rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.submit-btn:hover {
+    transform: scale(1.02);
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+    filter: brightness(1.2);
+}
+
+/* FOOTER */
+.form-footer {
+    margin-top: 30px;
+    text-align: center;
+}
+
+.form-footer p {
+    color: rgba(212, 175, 55, 0.5);
+    font-size: 0.8rem;
+    cursor: pointer;
+    letter-spacing: 1px;
+}
+
+.form-footer p:hover {
+    color: #d4af37;
+    text-decoration: underline;
+}
+
+/* AUTH BACKGROUND CANVAS */
+canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 2;
+    /* Between background image and UI */
+    pointer-events: none;
+}
+
+@media (max-width: 1024px) {
+    .ui {
+        grid-template-columns: 1fr;
+        text-align: center;
+        padding: 20px;
+    }
+
+    .left {
+        display: none;
+    }
+
+    .right {
+        justify-content: center;
+        grid-column: 1;
+        transform: none;
+    }
 }

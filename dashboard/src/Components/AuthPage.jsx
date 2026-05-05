@@ -1,99 +1,140 @@
-import React, { useState } from "react";
-import { Navigate } from "react-router-dom";
+import { useState } from "react";
 import { useAuth } from "./AuthContext";
-import AuthBackground from "./AuthBackground";
-import "./AuthPage.css"; // Ensure you import the CSS file!
+import { Navigate } from "react-router-dom";
+import AuthScene from "./AuthScene";
+import "./AuthPage.css";
 
-const AuthPage = () => {
-  const { isAuthenticated, login, register } = useAuth();
-  const [isLoginMode, setIsLoginMode] = useState(true);
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState("");
+export default function AuthPage() {
+  const { login, register, isAuthenticated } = useAuth();
 
-  if (isAuthenticated) {
-    return <Navigate to="/" replace />;
-  }
+  const [mode, setMode] = useState("login");
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    password: "",
+  });
 
-  const onSubmit = async (e) => {
+  const [loading, setLoading] = useState(false);
+
+  if (isAuthenticated) return <Navigate to="/" />;
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsSubmitting(true);
-    setError("");
+    setLoading(true);
+
     try {
-      if (isLoginMode) {
-        await login(email, password);
+      if (mode === "login") {
+        await login(form.email, form.password);
       } else {
-        await register(fullName, email, password);
+        await register(form.name, form.email, form.password);
       }
-    } catch (err) {
-      setError(err?.response?.data?.message || "Authentication failed. Please try again.");
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div className="auth-page">
-      <AuthBackground />
-      
-      <div className="auth-container">
-        <div className="auth-card glass-effect">
-          <div className="auth-header">
-            <h1 className="brand-title">FinSprint</h1>
-            <h2>{isLoginMode ? "Welcome Back" : "Create Workspace"}</h2>
-            <p>{isLoginMode ? "Access your trading dashboard" : "Start your stock trading journey today"}</p>
+    <div className="auth-root">
+      <AuthScene />
+
+      <div className="ui">
+        {/* Decorative Floating Symbols */}
+        <div className="floating-symbols">
+          <span className="symbol s1">₹</span>
+          <span className="symbol s2">$</span>
+          <span className="symbol s3">₹</span>
+          <span className="symbol s4">$</span>
+        </div>
+
+        <div className="left">
+          <div className="brand-badge">ESTD 2026</div>
+          <h1>FinSprint</h1>
+          <div className="tagline-container">
+            <div className="tagline-line"></div>
+            <p>Dalal Street's Modern Edge</p>
           </div>
+        </div>
 
-          <form onSubmit={onSubmit} className="auth-form">
-            {!isLoginMode && (
-              <div className="input-group">
-                <input
-                  type="text"
-                  placeholder="Full name"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  required
-                />
+        <div className="right">
+          <div className="auth-glass-card">
+            <form onSubmit={handleSubmit} className="form">
+              <div className="form-header">
+                <h2>{mode === "login" ? "Welcome Back" : "Open Account"}</h2>
+                <div className="market-status">
+                  <span className="dot"></span> LIVE MARKET ACCESS
+                </div>
               </div>
-            )}
-            <div className="input-group">
-              <input
-                type="email"
-                placeholder="Email address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            <div className="input-group">
-              <input
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={6}
-              />
-            </div>
 
-            {error && <div className="auth-error">{error}</div>}
+              {mode === "signup" && (
+                <div className="field">
+                  <input
+                    id="name"
+                    required
+                    placeholder=" "
+                    value={form.name}
+                    onChange={(e) =>
+                      setForm({ ...form, name: e.target.value })
+                    }
+                  />
+                  <label htmlFor="name">Full Name</label>
+                  <span className="field-icon">👤</span>
+                </div>
+              )}
 
-            <button className="auth-submit-btn" type="submit" disabled={isSubmitting}>
-              {isSubmitting ? <span className="loader"></span> : (isLoginMode ? "Secure Login" : "Create Account")}
-            </button>
-          </form>
+              <div className="field">
+                <input
+                  id="email"
+                  required
+                  type="email"
+                  placeholder=" "
+                  value={form.email}
+                  onChange={(e) =>
+                    setForm({ ...form, email: e.target.value })
+                  }
+                />
+                <label htmlFor="email">Email Address</label>
+                <span className="field-icon">📧</span>
+              </div>
 
-          <div className="auth-footer">
-            <button className="auth-switch-btn" onClick={() => setIsLoginMode((prev) => !prev)}>
-              {isLoginMode ? "Don't have an account? Sign up" : "Already have an account? Log in"}
-            </button>
+              <div className="field">
+                <input
+                  id="password"
+                  required
+                  type="password"
+                  placeholder=" "
+                  value={form.password}
+                  onChange={(e) =>
+                    setForm({ ...form, password: e.target.value })
+                  }
+                />
+                <label htmlFor="password">Security Password</label>
+                <span className="field-icon">🔒</span>
+              </div>
+
+              <button type="submit" className="submit-btn">
+                <span className="btn-text">
+                  {loading
+                    ? "COMMUNICATING..."
+                    : mode === "login"
+                    ? "SIGN IN TO TERMINAL"
+                    : "EXECUTE SIGN UP"}
+                </span>
+                <span className="btn-glow"></span>
+              </button>
+
+              <div className="form-footer">
+                <p onClick={() =>
+                  setMode(mode === "login" ? "signup" : "login")
+                }>
+                  {mode === "login"
+                    ? "New to the street? Open account →"
+                    : "Already registered? Access terminal →"}
+                </p>
+              </div>
+            </form>
           </div>
         </div>
       </div>
     </div>
   );
-};
-
-export default AuthPage;
+}
